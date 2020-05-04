@@ -25,32 +25,45 @@ router.route('/').get(auth,(req,res)=> {
 });
 
 router.route('/signup').post((req, res) => {
-
-    const user = new User({
-        username: req.body.username,
-        email: req.body.email,
-    });
-
-    user.password = user.generateHash(req.body.password);
-
-    user.save().then(
-        () => {
-            res.status(201).json({
-                message: 'User added successfully!'
+ 
+    User.findOne({userID: req.body.userID}).then((user) => {
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found!',
+                error: new Error('User not found!')
             });
         }
-    ).catch(
-        (error) => {
-            res.status(500).json({
-                error: error
+        else if (user.password){
+            return res.status(405).json({
+                message: 'That user has alreday signed up!',
+                error: new Error('That user has already signed up!')
             });
         }
-    );
+        else{
+            user.password = user.generateHash(req.body.password);
+
+            user.save().then(
+                () => {
+                    res.status(201).json({
+                        message: 'You have registered successfully!'
+                    });
+                }
+            ).catch(
+                (error) => {
+                    res.status(500).json({
+                        error: error
+                    });
+                }
+            );
+        }
+    })
+
+   
 });
 
 router.route('/login').post((req, res) => {
 
-    User.findOne({ email: req.body.email }).then(
+    User.findOne({ userID: req.body.userID }).then(
         (user) => {
             if (!user) {
                 return res.status(401).json({
@@ -114,7 +127,6 @@ router.route('/logout').get(auth,(req, res) => {
 router.route('/auth').get(auth,(req, res) => {
     res.status(200).json("True");
 });
-
 
 router.route('/setUserCourses').post(auth,(req,res)=> {
     console.log(req.body.userId || req.query.userId);
