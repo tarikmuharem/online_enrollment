@@ -65,11 +65,11 @@ router.route('/login').post((req, res) => {
 
     User.findOne({ userID: req.body.userID }).then(
         (user) => {
-            if (!user) {
+           if (!user) {
                 return res.status(401).json({
                     error: new Error('User not found!')
                 });
-            }
+             }
 
             if(user.validPassword(req.body.password))
             {
@@ -81,11 +81,22 @@ router.route('/login').post((req, res) => {
                 UserSession.replaceOne({userId: user._id},{userId: user._id, token: token},{ upsert: true })
                     .then((session) => {
                         //console.log("replaceOne worked " + session);
-                        res.status(200).json({
-                            userId: user._id,
-                            token: token,
-                            expiresIn: 1
-                        });
+                        if(user.isAdmin){
+                            res.status(200).json({
+                                userId: user._id,
+                                token: token,
+                                expiresIn: 1,
+                                isAdmin: true 
+                            });
+                        }
+                        else{
+                            res.status(200).json({
+                                userId: user._id,
+                                token: token,
+                                expiresIn: 1,
+                                isAdmin: false
+                            });
+                        }
                     })
                     .catch((err) => {
                         res.status(401).json('Error replaceOne: ' + err);
@@ -95,6 +106,7 @@ router.route('/login').post((req, res) => {
             else
             {
                 return res.status(401).json({
+                    message:'Incorrect password',
                     error: new Error('Incorrect password!')
                 });
             }
